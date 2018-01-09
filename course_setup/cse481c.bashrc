@@ -122,7 +122,7 @@ export ROBOT=sim # The type of robot.
 export ROSCONSOLE_FORMAT='${node} ${function}:${line}: ${message}' # Formats log messages, see http://wiki.ros.org/rosconsole#Console_Output_Formatting
 
 # Get IP address on ethernet
-# If you're on a desktop, change wlan0 to eth0
+# If you're on a laptop, change eth0 to wlan0
 function my_ip() {
     MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' | sed -e s/addr://)
     echo ${MY_IP:-"Not connected"}
