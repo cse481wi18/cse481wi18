@@ -1,0 +1,192 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/ros-websocket/ros-websocket.html">
+<link rel="import" href="../bower_components/ros-topic/ros-topic.html">
+<link rel="import" href="../bower_components/ros-service/ros-service.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<dom-module id="web-teleop-app">
+  <template>
+    <style is="custom-style" include="iron-flex"></style>
+    <style>
+      :host {
+        display: block;
+      }
+      paper-slider {
+        --paper-slider-input: {
+          width: 100px;
+        }
+      }
+      paper-button {
+        background-color: #eee;
+        user-select: none;
+      }
+      #driving {
+        display: inline-block;
+      }
+      #camera img {
+        width: 100%;
+          height: auto;
+      }
+    </style>
+    <ros-websocket auto id="ros" ros="{{ros}}"
+      url="{{url}}"
+      on-connection="_handleConnection"
+      on-close="_handleClose"
+      on-error="_handleError"
+    ></ros-websocket>
+    <ros-topic auto
+      ros="{{ros}}"
+      topic="joint_state_republisher/torso_lift_joint"
+      msg-type="std_msgs/Float64"
+      last-message="{{torsoHeight}}"
+      on-message="_handleTorsoHeight"
+    ></ros-topic>
+    <ros-topic
+      id="baseTopic"
+      ros="{{ros}}"
+      topic="cmd_vel"
+      msg-type="geometry_msgs/Twist"
+    ></ros-topic>
+		<ros-service
+		  id="torsoService"
+		  on-response="_handleTorsoSuccess"
+		  on-fail="_handleTorsoError"
+		  name="/web_teleop/set_torso"
+		  ros="{{ros}}"
+		  service-type="web_teleop/SetTorso"
+		></ros-service>
+    <h1>Fetch teleop</h1>
+    {{status}}
+    <div id="camera">
+      <img src="//[[hostname]]:8000/stream?topic=/head_camera/rgb/image_raw"></img>
+    </div>
+    <div>
+      Torso height: [[_round(torsoHeight.data, 0.001)]] meters
+    </div>
+    <div class="layout horizontal center">
+      <paper-slider min="0" max="0.4" step="0.01" editable
+        value="{{desiredTorsoHeight}}"></paper-slider>
+      <paper-button on-click="_setTorso">Set torso</paper-button>
+    </div>
+    <div id="driving" class="layout vertical">
+      <div class="layout horizontal">
+        <div class="flex"></div>
+        <paper-button
+            on-down="_startForward"
+            on-up="_endBaseCommand"
+          >Forward</paper-button>
+        <div class="flex"></div>
+      </div>
+      <div class="layout horizontal">
+        <paper-button on-down="_startLeft" on-up="_endBaseCommand" >Left</paper-button>
+        <paper-button>Back</paper-button>
+        <paper-button>Right</paper-button>
+      </div>
+    </div>
+  </template>
+  <script>
+    class WebTeleopApp extends Polymer.Element {
+      static get is() { return 'web-teleop-app'; }
+      static get properties() {
+        return {
+        };
+      }
+
+      ready() {
+        super.ready();
+        this.hostname = window.location.hostname;
+      }
+
+      _handleConnection() {
+        this.status = 'Connected to the websocket server.';
+        console.log(this.status);
+      }
+      _handleClose() {
+        this.status = 'Closed connection to the websocket server.';
+        console.log(this.status);
+      }
+      _handleError() {
+        this.status = 'Error connecting to the websocket server.';
+        console.log(this.status);
+      }
+
+      _handleTorsoHeight(evt) {
+        var msg = evt.detail;
+        //console.log(msg);
+      }
+
+      // Rounds val to a given precision, where the precision is given as the
+      // step size between numbers in the output range.
+      // E.g., _round(0.053, 0.1) = 0.1
+      // E.g., _round(0.053, 0.01) = 0.05
+      // E.g., _round(0.053, 0.001) = 0.053
+      _round(val, precision) {
+        return Math.round(val/precision) * precision;
+      }
+
+      _setTorso() {
+        this.status = 'Setting torso to ' + this.desiredTorsoHeight + ' meters...';
+        this.$.torsoService.call({height: this.desiredTorsoHeight});
+      }
+			_handleTorsoSuccess() {
+        this.status = 'Set torso to ' + this.desiredTorsoHeight + ' meters.';
+      }
+			_handleTorsoError(evt) {
+        this.status = 'Error: ' + evt.detail;
+      }
+
+      _startForward(evt) {
+        evt.preventDefault();
+        this.status = 'Driving forward...';
+        var baseTopic = this.$.baseTopic;
+        if (this.baseCommand) {
+          clearInterval(this.baseCommand);
+        }
+        this.baseCommand = setInterval(function() {
+          baseTopic.publish({
+            linear: {
+              x: 0.1,
+              y: 0,
+              z: 0
+            },
+            angular: {
+              x: 0,
+              y: 0,
+              z: 0
+            }
+          });
+        }, 10);
+      }
+
+      _startLeft(evt) {
+        evt.preventDefault();
+        this.status = 'Turning left...';
+        var baseTopic = this.$.baseTopic;
+        this.baseCommand = setInterval(function() {
+          baseTopic.publish({
+            linear: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            angular: {
+              x: 0,
+              y: 0,
+              z: 0.5
+            }
+          });
+        }, 10);
+      }
+
+
+      _endBaseCommand(evt) {
+        this.status = 'Stopped driving.';
+        clearInterval(this.baseCommand);
+      }
+    }
+
+    window.customElements.define(WebTeleopApp.is, WebTeleopApp);
+  </script>
+</dom-module>

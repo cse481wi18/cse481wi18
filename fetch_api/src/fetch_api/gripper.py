@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 
-# TODO: import ?????????
-# TODO: import ???????_msgs.msg
+import actionlib
+import control_msgs.msg
 import rospy
 
-# TODO: ACTION_NAME = ???
 CLOSED_POS = 0.0  # The position for a fully-closed gripper (meters).
 OPENED_POS = 0.10  # The position for a fully-open gripper (meters).
+ACTION_SERVER = 'gripper_controller/gripper_action'
 
 
 class Gripper(object):
@@ -16,17 +16,15 @@ class Gripper(object):
     MAX_EFFORT = 100  # Max grasp force, in Newtons
 
     def __init__(self):
-        # TODO: Create actionlib client
-        # TODO: Wait for server
-        pass
+        self._client = actionlib.SimpleActionClient(ACTION_SERVER, control_msgs.msg.GripperCommandAction)
+        self._client.wait_for_server(rospy.Duration(10))
 
     def open(self):
         """Opens the gripper.
         """
-        # TODO: Create goal
-        # TODO: Send goal
-        # TODO: Wait for result
-        rospy.logerr('Not implemented.')
+        goal = control_msgs.msg.GripperCommandGoal()
+        goal.command.position = OPENED_POS
+        self._client.send_goal_and_wait(goal, rospy.Duration(10))
 
     def close(self, max_effort=MAX_EFFORT):
         """Closes the gripper.
@@ -35,7 +33,7 @@ class Gripper(object):
             max_effort: The maximum effort, in Newtons, to use. Note that this
                 should not be less than 35N, or else the gripper may not close.
         """
-        # TODO: Create goal
-        # TODO: Send goal
-        # TODO: Wait for result
-        rospy.logerr('Not implemented.')
+        goal = control_msgs.msg.GripperCommandGoal()
+        goal.command.position = CLOSED_POS
+        goal.command.max_effort = max_effort
+        self._client.send_goal_and_wait(goal, rospy.Duration(10))

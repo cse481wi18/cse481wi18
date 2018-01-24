@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>fetch_api</name>
+  <name>joint_state_reader</name>
   <version>0.1.0</version>
-  <description>High-level API for controlling the Fetch robot.</description>
+  <description>The joint_state_reader package</description>
   <maintainer email="jstn@cs.washington.edu">Justin Huang</maintainer>
   <license>TODO</license>
   <buildtool_depend>catkin</buildtool_depend>
-  <depend>actionlib</depend>
-  <depend>control_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
-  <depend>trajectory_msgs</depend>
   <export>
   </export>
 </package>

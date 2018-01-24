@@ -6,6 +6,7 @@
   <maintainer email="jstn@todo.todo">jstn</maintainer>
   <license>TODO</license>
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>fetch_api</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <export>
