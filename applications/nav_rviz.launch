@@ -1,0 +1,7 @@
+<launch>
+  <arg name="map_file" default="$(find applications)/maps/playground.yaml" />
+  <include file="$(find fetch_navigation)/launch/freight_nav.launch">
+    <arg name="map_file" value="$(arg map_file)" />
+  </include>
+  <node pkg="rviz" type="rviz" name="$(anon rviz)" args="-d $(find applications)/config/navigation.rviz" />
+</launch>
