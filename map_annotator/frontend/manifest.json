@@ -1,0 +1,6 @@
+{
+  "name": "map-annotator",
+  "short_name": "map-annotator",
+  "start_url": "/",
+  "display": "standalone"
+}

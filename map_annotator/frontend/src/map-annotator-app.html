@@ -1,0 +1,171 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/ros-topic/ros-topic.html">
+<link rel="import" href="../bower_components/ros-websocket/ros-websocket.html">
+<link rel="import" href="../bower_components/ros-rviz/ros-rviz.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="map-annotator-pose.html">
+
+<dom-module id="map-annotator-app">
+  <template>
+    <style is="custom-style" include="iron-flex"></style>
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        padding: 8px;
+        font-family: sans-serif;
+        height: 100%;
+      }
+      paper-button {
+        background-color: #eee;
+      }
+      #main {
+        height: 100%;
+      }
+      #content {
+        height: 100%;
+      }
+      #controls {
+        min-width: 300px;
+      }
+      #create {
+        margin-bottom: 5px;
+      }
+		  map-annotator-pose + map-annotator-pose {
+        margin-top: 5px;
+      }
+    </style>
+    <ros-websocket auto id="ros" ros="{{ros}}"
+      url="{{url}}"
+      on-connection="_handleConnection"
+      on-close="_handleClose"
+      on-error="_handleError"
+    ></ros-websocket>
+    <ros-topic auto
+      ros="{{ros}}"
+      topic="map_annotator/pose_names"
+      msg-type="map_annotator/PoseNames"
+      last-message="{{poseNames}}"
+      on-message="_handlePoseNames"
+    ></ros-topic>
+    <ros-topic
+      auto
+      id="userActions"
+      topic="map_annotator/user_actions"
+      ros="{{ros}}"
+      msg-type="map_annotator/UserAction"
+    ></ros-topic>
+    <div id="main" class="layout vertical">
+      <h1>Map annotator</h1>
+      <div>{{status}}</div>
+      <div id="content" class="layout horizontal">
+        <div id="controls">
+          <h2>Poses</h2>
+          <paper-button id="create" on-tap="_handleCreate">Create pose</paper-button>
+          <template is="dom-repeat" items="[[poseNames.names]]">
+            <map-annotator-pose ros="[[ros]]" pose-name="[[item]]"></map-annotator-pose>
+          </template>
+        </div>
+        <ros-rviz id="rviz" ros="[[ros]]" class="flex"></ros-rviz>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    class MapAnnotatorApp extends Polymer.Element {
+      static get is() { return 'map-annotator-app'; }
+      static get properties() {
+        return {
+        };
+      }
+
+      ready() {
+        super.ready();
+        var config = {
+          "globalOptions": {
+            "background": "#111111",
+            "colladaLoader": "collada2",
+            "colladaServer": "http://localhost:8001/",
+            "fixedFrame": "/map",
+            "url": "ws://localhost:9090",
+            "videoServer": "http://localhost:9999"
+          },
+          "sidebarOpened": false,
+          "displays": [
+            {
+              "isShown": true,
+              "name": "Grid",
+              "options": {
+                "cellSize": "1",
+                "color": "#cccccc",
+                "numCells": "10"
+              },
+              "type": "grid"
+            },
+            {
+              "isShown": true,
+              "name": "Map",
+              "options": {
+                "color": {
+                  "r": 255,
+                  "g": 255,
+                  "b": 255
+                },
+                "continuous": true,
+                "opacity": "1",
+                "topic": "/map"
+              },
+              "type": "occupancyGrid"
+            },
+            {
+              "isShown": true,
+              "name": "Robot model",
+              "options": {
+                "param": "robot_description"
+              },
+              "type": "urdf"
+            },
+						{
+    				  "isShown": true,
+    				  "name": "Interactive Markers",
+    				  "options": {
+    				    "topic": "/map_annotator/map_poses"
+    				  },
+    				  "type": "interactiveMarkers"
+    				}
+          ]
+        };
+        this.$.rviz.config = config;	
+      }
+
+      _handleConnection() {
+        this.status = 'Connected to the websocket server.';
+        console.log(this.status);
+      }
+      _handleClose() {
+        this.status = 'Closed connection to the websocket server.';
+        console.log(this.status);
+      }
+      _handleError() {
+        this.status = 'Error connecting to the websocket server.';
+        console.log(this.status);
+      }
+
+      _handlePoseNames(evt) {
+        var msg = evt.detail;
+        console.log('Pose list: ', msg);
+      }
+      _handleCreate(evt) {
+        var name = prompt('Enter a name for the pose:');
+        var msg = {
+          command: 'create',
+          name: name
+        };     
+        this.$.userActions.publish(msg);
+      }
+    }
+
+    window.customElements.define(MapAnnotatorApp.is, MapAnnotatorApp);
+  </script>
+</dom-module>

@@ -1,0 +1,15 @@
+{
+  "name": "map-annotator",
+  "main": "index.html",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "ros-websocket": "jstnhuang/ros-websocket#^3.0.2",
+    "ros-topic": "jstnhuang/ros-topic#^1.0.0",
+    "ros-rviz": "jstnhuang/ros-rviz#^3.0.4",
+    "paper-button": "PolymerElements/paper-button#^2.0.0"
+  },
+  "devDependencies": {
+    "web-component-tester": "Polymer/web-component-tester#^6.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.0"
+  }
+}
