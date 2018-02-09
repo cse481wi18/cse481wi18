@@ -7,8 +7,8 @@ import trajectory_msgs.msg
 import math
 import rospy
 
-LOOK_AT_ACTION_NAME = 'head_controller/follow_joint_trajectory'
-PAN_TILT_ACTION_NAME = 'head_controller/point_head'
+PAN_TILT_ACTION_NAME = 'head_controller/follow_joint_trajectory'
+LOOK_AT_ACTION_NAME = 'head_controller/point_head'
 PAN_JOINT = 'head_pan_joint'
 TILT_JOINT = 'head_tilt_joint'
 PAN_TILT_TIME = 2.5
@@ -32,11 +32,12 @@ class Head(object):
     MAX_TILT = math.pi/4  
 
     def __init__(self):
-        self.traj_client = actionlib.SimpleActionClient(LOOK_AT_ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
-        self.point_client = actionlib.SimpleActionClient(PAN_TILT_ACTION_NAME, control_msgs.msg.PointHeadAction)
-        self.traj_client.wait_for_server()
-        self.point_client.wait_for_server()
-        pass
+        self.traj_client = actionlib.SimpleActionClient(PAN_TILT_ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
+        self.point_client = actionlib.SimpleActionClient(LOOK_AT_ACTION_NAME, control_msgs.msg.PointHeadAction)
+        while not self.traj_client.wait_for_server(timeout=rospy.Duration(1)):
+            rospy.logwarn('Waiting for head trajectory server...')
+        while not self.point_client.wait_for_server(timeout=rospy.Duration(1)):
+            rospy.logwarn('Waiting for head pointing server...')
 
     def look_at(self, frame_id, x, y, z):
         """Moves the head to look at a point in space.
