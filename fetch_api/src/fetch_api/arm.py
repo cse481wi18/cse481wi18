@@ -5,12 +5,15 @@ import control_msgs.msg
 import geometry_msgs.msg
 import trajectory_msgs.msg
 import math
+import moveit_commander
 import rospy
+import tf
 
 from .arm_joints import ArmJoints
 from .moveit_goal_builder import MoveItGoalBuilder
 from moveit_msgs.msg import MoveItErrorCodes, MoveGroupAction
 from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
+from tf.listener import TransformListener
 
 ARM_GROUP_NAME = 'arm'
 JOINT_ACTION_SERVER = 'arm_controller/follow_joint_trajectory'
@@ -88,6 +91,7 @@ class Arm(object):
         arm = fetch_api.Arm()
         arm.move_to_joints(joints)
     """
+
     def __init__(self):
         self._joint_client = actionlib.SimpleActionClient(
             JOINT_ACTION_SERVER, control_msgs.msg.FollowJointTrajectoryAction)
@@ -96,6 +100,7 @@ class Arm(object):
             MOVE_GROUP_ACTION_SERVER, MoveGroupAction)
         self._move_group_client.wait_for_server(rospy.Duration(10))
         self._compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
+        self._tf_listener = TransformListener()
 
     def move_to_joints(self, joint_state):
         goal = control_msgs.msg.FollowJointTrajectoryGoal()
@@ -230,6 +235,59 @@ class Arm(object):
                 return moveit_error_string(result.error_code.val)
         else:
             return moveit_error_string(MoveItErrorCodes.TIMED_OUT)
+
+    def straight_move_to_pose(self,
+                              group,
+                              pose_stamped,
+                              ee_step=0.025,
+                              jump_threshold=1.6,
+                              avoid_collisions=True):
+        """Moves the end-effector to a pose in a straight line.
+
+        Args:
+          group: moveit_commander.MoveGroupCommander. The planning group for
+            the arm.
+          pose_stamped: geometry_msgs/PoseStamped. The goal pose for the
+            gripper.
+          ee_step: float. The distance in meters to interpolate the path.
+          jump_threshold: float. The maximum allowable distance in the arm's
+            configuration space allowed between two poses in the path. Used to
+            prevent "jumps" in the IK solution.
+          avoid_collisions: bool. Whether to check for obstacles or not.
+
+        Returns:
+            string describing the error if an error occurred, else None.
+        """
+        # Transform pose into planning frame
+        self._tf_listener.waitForTransform(pose_stamped.header.frame_id,
+                                           group.get_planning_frame(),
+                                           rospy.Time.now(),
+                                           rospy.Duration(1.0))
+        try:
+            pose_transformed = self._tf_listener.transformPose(
+                group.get_planning_frame(), pose_stamped)
+        except (tf.LookupException, tf.ConnectivityException):
+            rospy.logerr('Unable to transform pose from frame {} to {}'.format(
+                pose_stamped.header.frame_id, group.get_planning_frame()))
+            return moveit_error_string(
+                MoveItErrorCodes.FRAME_TRANSFORM_FAILURE)
+
+        # Compute path
+        plan, fraction = group.compute_cartesian_path(
+            [group.get_current_pose().pose,
+             pose_transformed.pose], ee_step, jump_threshold, avoid_collisions)
+        if fraction < 1 and fraction > 0:
+            rospy.logerr(
+                'Only able to compute {}% of the path'.format(fraction * 100))
+        if fraction == 0:
+            return moveit_error_string(MoveItErrorCodes.PLANNING_FAILED)
+
+        # Execute path
+        result = group.execute(plan, wait=True)
+        if not result:
+            return moveit_error_string(MoveItErrorCodes.INVALID_MOTION_PLAN)
+        else:
+            return None
 
     def check_pose(self,
                    pose_stamped,
