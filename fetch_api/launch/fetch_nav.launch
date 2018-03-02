@@ -34,4 +34,6 @@
   <!-- tilt the head -->
   <node pkg="fetch_navigation" type="tilt_head.py" name="tilt_head_node" />
 
+  <node pkg="fetch_api" type="navigation_controller.py" name="navigation_speed_controller" />
+
 </launch>

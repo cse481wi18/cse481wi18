@@ -5,7 +5,7 @@
 
   <!-- set topics -->
   <arg name="map_topic" default="map" />
-  <arg name="cmd_vel_topic" default="cmd_vel" />
+  <arg name="cmd_vel_topic" default="move_base_cmd_vel" />
   <arg name="odom_topic" default="odom" />
 
   <!-- planners, costmaps, etc -->
