@@ -26,17 +26,21 @@ class Head(object):
         head.look_at('base_link', 1, 0, 0.3)
         head.pan_tilt(0, math.pi/4)
     """
-    MIN_PAN = -math.pi/2  
-    MAX_PAN = math.pi/2  
-    MIN_TILT = -math.pi/2  
-    MAX_TILT = math.pi/4  
+    MIN_PAN = -math.pi / 2
+    MAX_PAN = math.pi / 2
+    MIN_TILT = -math.pi / 2
+    MAX_TILT = math.pi / 4
 
     def __init__(self):
-        self.traj_client = actionlib.SimpleActionClient(PAN_TILT_ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
-        self.point_client = actionlib.SimpleActionClient(LOOK_AT_ACTION_NAME, control_msgs.msg.PointHeadAction)
-        while not self.traj_client.wait_for_server(timeout=rospy.Duration(1)):
+        self.traj_client = actionlib.SimpleActionClient(
+            PAN_TILT_ACTION_NAME, control_msgs.msg.FollowJointTrajectoryAction)
+        self.point_client = actionlib.SimpleActionClient(
+            LOOK_AT_ACTION_NAME, control_msgs.msg.PointHeadAction)
+        while not self.traj_client.wait_for_server(
+                timeout=rospy.Duration(1)) and not rospy.is_shutdown():
             rospy.logwarn('Waiting for head trajectory server...')
-        while not self.point_client.wait_for_server(timeout=rospy.Duration(1)):
+        while not self.point_client.wait_for_server(
+                timeout=rospy.Duration(1)) and not rospy.is_shutdown():
             rospy.logwarn('Waiting for head pointing server...')
 
     def look_at(self, frame_id, x, y, z):
@@ -50,9 +54,9 @@ class Head(object):
         """
         goal = control_msgs.msg.PointHeadGoal()
         goal.target.header.frame_id = frame_id
-        goal.target.point.x  = x
-        goal.target.point.y  = y
-        goal.target.point.z  = z
+        goal.target.point.x = x
+        goal.target.point.y = y
+        goal.target.point.z = z
 
         goal.min_duration = rospy.Duration(PAN_TILT_TIME)
         self.point_client.send_goal(goal)
@@ -65,8 +69,8 @@ class Head(object):
             pan: The pan angle, in radians. A positive value is clockwise.
             tilt: The tilt angle, in radians. A positive value is downwards.
         """
-	pan = min(max(pan, Head.MIN_PAN), Head.MAX_PAN)
-	tilt = min(max(tilt, Head.MIN_TILT), Head.MAX_TILT)
+        pan = min(max(pan, Head.MIN_PAN), Head.MAX_PAN)
+        tilt = min(max(tilt, Head.MIN_TILT), Head.MAX_TILT)
 
         point = trajectory_msgs.msg.JointTrajectoryPoint()
         point.positions = [pan, tilt]
