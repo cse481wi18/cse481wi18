@@ -240,7 +240,7 @@ class Arm(object):
                               group,
                               pose_stamped,
                               ee_step=0.025,
-                              jump_threshold=1.6,
+                              jump_threshold=2.0,
                               avoid_collisions=True):
         """Moves the end-effector to a pose in a straight line.
 
