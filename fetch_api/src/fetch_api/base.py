@@ -79,7 +79,7 @@ class Base(object):
             self.move(direction * speed, 0)
             rate.sleep()
 
-    def turn(self, angular_distance, speed=0.5):
+    def turn(self, angular_distance, speed=1):
         """Rotates the robot a certain angle.
 
         This illustrates how to turn the robot by checking that the X-axis of
